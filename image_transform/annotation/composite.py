@@ -142,7 +142,7 @@ class Composite(ImageAnnotation, MutableSequence):
             elif isinstance(label, (ProbabilisticMultipleScoped, ScopedMaskWithConfidence)):
                 return set(label.scope)
             elif isinstance(label, list):
-                return set(chain(_get_unique_labels(_label) for _label in label))
+                return set(chain(*[_get_unique_labels(_label) for _label in label]))
             else:
                 return {None}
         return set(chain(*[_get_unique_labels(a) for a in self.annotations]))

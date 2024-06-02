@@ -1,5 +1,5 @@
 import json
-from typing import Union, IO
+from typing import Optional, Union, IO
 from io import BytesIO
 from base64 import b64decode, b64encode
 from os.path import join, basename
@@ -11,13 +11,14 @@ from .. import Composite, ImageAnnotation, Image, EmptyImage, Point, Box, Orient
     Scoped, ArbitraryHashable, Empty, ScopedWithConfidence
 
 
-def from_labelme(label_dict: Union[str, dict, IO], image_path=None, type_scoped=None) -> Composite:
+def from_labelme(label_dict: Union[str, dict, IO], encoding: Optional[str]=None, image_path=None, type_scoped=None) -> Composite:
     """
     Return a Composite from reading annotations created by labelme.
 
     Args:
         label_dict (dict, str, IO): dict read from .json file created by labelme, or file pointer to
             the json file, or the path to the json file.
+        encoding: encoding of the JSON file, effective only when `label_dict` is str.
         image_path (str, optional): Image file of the annotaion.
             If "imageData" is in label_dict, image_path is ignored.
             If None, the image is read from label_dict["imageData"] or created as EmptyImage.
@@ -33,7 +34,7 @@ def from_labelme(label_dict: Union[str, dict, IO], image_path=None, type_scoped=
         pass
     elif isinstance(label_dict, str):
         assert label_dict.endswith('.json'), "label_dict as path should end with .json"
-        with open(label_dict, 'r') as fp:
+        with open(label_dict, 'r', encoding=encoding) as fp:
             label_dict = json.load(fp)
     else:
         assert hasattr(label_dict, "read"), "label_dict should be a file pointer"
@@ -42,7 +43,7 @@ def from_labelme(label_dict: Union[str, dict, IO], image_path=None, type_scoped=
     img_w = label_dict['imageWidth']
     img_h = label_dict['imageHeight']
 
-    if "imageData" in label_dict:
+    if "imageData" in label_dict and label_dict["imageData"] is not None:
         image = b64decode(label_dict["imageData"])
         stream = BytesIO(image)
         image = PIL_Image.open(stream)
@@ -74,8 +75,10 @@ def from_labelme(label_dict: Union[str, dict, IO], image_path=None, type_scoped=
             if len(points) == 4:
                 points = [Point(p[0], p[1], img_w, img_h, label) for p in points]
                 anno = OrientedBox.from_points(points, img_w, img_h)
-            else:
+            elif len(points) > 2:
                 anno = Polygon(points, img_w, img_h, label)
+            else:
+                raise UserWarning("TODO")
         elif shape_type == "rectangle":
             top_left_point = Point(points[0, 0], points[0, 1], img_w, img_h, label)
             bottom_right_point = Point(points[1, 0], points[1, 1], img_w, img_h, label)
@@ -155,7 +158,7 @@ def to_labelme(composite: ImageAnnotation, dst: Union[str, IO, None] = None, ima
 
     if isinstance(dst, str):
         assert dst.endswith('.json'), "label_dict as path should end with .json"
-        with open(dst, 'w') as fp:
+        with open(dst, 'w', encoding="utf-8") as fp:
             json.dump(label_dict, fp)
     elif dst is None:
         return label_dict

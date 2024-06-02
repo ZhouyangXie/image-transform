@@ -1,7 +1,7 @@
 import json
 import collections
 from os.path import join
-from typing import Union, IO
+from typing import Optional, Union, IO
 
 from PIL import Image as PIL_Image
 
@@ -29,13 +29,14 @@ class _CocoObjectDetectionAccessor(collections.abc.Sequence):
         return Composite([image] + boxes).compact()
 
 
-def make_coco_object_detection_accessor(annotation_file: Union[str, dict, IO], image_dir=None):
+def make_coco_object_detection_accessor(annotation_file: Union[str, dict, IO], encoding: Optional[str]=None, image_dir=None):
     """
     Return a list of Composite objects from reading annotations created by labelme.
 
     Args:
         annotation_file (dict, str, IO): dict read from .json annotation file, or file pointer to
             the json file, or the path to the json file.
+        encoding: encoding of the JSON file, effective only when `label_dict` is str.
         image_dir (str, optional): Image file directory.
             If None, the image is set to an EmptyImage.
             If not None, image is read from join(image_dir, filename) by PIL.Image.open.
@@ -48,7 +49,7 @@ def make_coco_object_detection_accessor(annotation_file: Union[str, dict, IO], i
         pass
     elif isinstance(annotation_file, str):
         assert annotation_file.endswith('.json'), "label_dict as a path should ends with .json"
-        with open(annotation_file, "r") as fp:
+        with open(annotation_file, "r", encoding=encoding) as fp:
             annotation_file = json.load(fp)
     else:
         assert hasattr(annotation_file, "read"), "label_dict should be a file pointer"
