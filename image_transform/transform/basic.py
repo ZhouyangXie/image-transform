@@ -156,6 +156,6 @@ class SequentialMinibatchTransforms(MinibatchTransform):
         return images
 
     def _get_inverse(self):
-        return SequentialTransforms(
+        return SequentialMinibatchTransforms(
             [t.get_inverse() for t in self.transforms[::-1]],
         )
