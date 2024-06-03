@@ -147,4 +147,4 @@ class Stack(MinibatchTransform):
             return list(images), list(labels)
 
     def _get_inverse(self):
-        return self.transforms.get_inverse()
+        return MinibatchRespectiveTransform([t.get_inverse() for t in self.transforms])
