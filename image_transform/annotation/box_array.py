@@ -351,9 +351,9 @@ class BoxArray(ImageAnnotation):
             is_kept = ~is_outside
             return BoxArray(
                 xmin=np.maximum(self.xmin[is_kept], 0),
-                xmax=np.minimum(self.xmax[is_kept], self.img_w),
+                xmax=np.minimum(self.xmax[is_kept], self.img_w - 1),
                 ymin=np.maximum(self.ymin[is_kept], 0),
-                ymax=np.minimum(self.ymax[is_kept], self.img_h),
+                ymax=np.minimum(self.ymax[is_kept], self.img_h - 1),
                 img_w=self.img_w,
                 img_h=self.img_h,
                 label=[self.label[i] for i, keep in enumerate(is_kept) if keep],
