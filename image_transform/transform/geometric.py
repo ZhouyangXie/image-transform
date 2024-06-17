@@ -300,16 +300,42 @@ class Resize(GeometricTransform):
         dst_w (int): target width. Must be greater than 0.
         dst_h (int): target height. Must be greater than 0.
     """
-    def __init__(self, dst_w, dst_h):
+    def __init__(self, dst_w, dst_h, keep_aspect_ratio: bool = False, fill_value: int = 0):
         super().__init__()
         self.dst_w = dst_w
         self.dst_h = dst_h
+        self.keep_aspect_ratio = keep_aspect_ratio
+        self.fill_value = fill_value
+        self.pad_transform = None
 
     def _transform(self, image_annotation):
-        return image_annotation.resize(self.dst_w, self.dst_h)
+        if self.keep_aspect_ratio:
+            src_aspect_ratio = self.img_w/self.img_h
+            dst_aspect_ratio = self.dst_w/self.dst_h
+
+            if src_aspect_ratio > dst_aspect_ratio:
+                dst_h = int(self.dst_w/src_aspect_ratio)
+                image_annotation = image_annotation.resize(self.dst_w, dst_h)
+                self.pad_transform = Pad(up=0, down=max(0, self.dst_h - dst_h), left=0, right=0, fill_value=self.fill_value)
+            else:
+                dst_w = int(self.dst_h * src_aspect_ratio)
+                image_annotation = image_annotation.resize(dst_w, self.dst_h)
+                self.pad_transform = Pad(up=0, down=0, left=0, right=max(0, self.dst_w - dst_w), fill_value=self.fill_value)
+
+            image_annotation = self.pad_transform.transform(image_annotation)
+        else:
+            image_annotation = image_annotation.resize(self.dst_w, self.dst_h)
+
+        return image_annotation
 
     def _get_inverse(self):
-        return Resize(self.img_w, self.img_h)
+        if self.keep_aspect_ratio:
+            return SequentialTransforms([
+                self.pad_transform.get_inverse(),
+                Resize(self.img_w, self.img_h)
+            ])
+        else:
+            return Resize(self.img_w, self.img_h)
 
 
 class Transpose(GeometricTransform):
