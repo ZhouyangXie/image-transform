@@ -31,6 +31,8 @@ Feature:
 
 Project Quality:
 
+* Type hinting.
+
 * Fix error types. Runtime/Type/Attribute/Index Error or some custom Exception.
 
 * Documents. Consider auto documenting tool like Sphinx.
